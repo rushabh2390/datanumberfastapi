@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 
-from . import models, schemas
+import models, schemas
 
 
-# def get_user(db: Session, user_id: int):
-#     return db.query(models.Dates).filter(models.User.id == user_id).first()
+def fetch_all_dates(db: Session, user_id: int):
+    return db.query(models.Dates).all()
 
 
 # def get_user_by_email(db: Session, email: str):
@@ -15,13 +15,14 @@ from . import models, schemas
 #     return db.query(models.User).offset(skip).limit(limit).all()
 
 
-def create_user(db: Session, user: schemas.UserCreate):
-    
-    db_user = models.User(email=user.email, hashed_password=fake_hashed_password)
-    db.add(db_user)
+def create_dates(db: Session, dates_data: schemas.DatesResponse):
+
+    db_dates = models.Dates(month=dates_data.month,
+                            day=dates_data.day, fact=dates_data.fact)
+    db.add(db_dates)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(db_dates)
+    return db_dates
 
 
 # def get_items(db: Session, skip: int = 0, limit: int = 100):

@@ -1,13 +1,18 @@
-from tomlkit import string
 from pydantic import BaseModel, ValidationError, validator
 
 
-class Dates(BaseModel):
-    id: int
+class DatesIn(BaseModel):
     month: int
     day: int
+
+
+class DatesResponse(DatesIn):
     fact: str
-    day_checked = str
+
+
+class Dates(DatesResponse):
+    id: int
+    day_checked = int
 
     @validator('month')
     def Month_between_1_to_12(cls, value):
@@ -23,9 +28,3 @@ class Dates(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-class DatesResponse(BaseModel):
-    month: int
-    day: int
-    fact: str
