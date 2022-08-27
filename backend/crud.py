@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 import models
 import schemas
 from sqlalchemy.orm import load_only
+from sqlalchemy import desc
 
 
 def create_or_update_months(db: Session, month: int):
@@ -11,7 +12,6 @@ def create_or_update_months(db: Session, month: int):
     Args:
         db (Session): _description_
     """
-    print("month=>", month)
     month_record = db.query(models.Months).filter(
         models.Months.month == month).first()
 
@@ -67,7 +67,7 @@ def create_dates(db: Session, dates_data: schemas.DatesResponse):
     return dates_record
 
 
-def get_popular(db: Session, ):
+def get_popular(db: Session):
     """_summary_
 
     Args:
@@ -76,7 +76,6 @@ def get_popular(db: Session, ):
     Returns:
         _type_: _description_
     """
-    pass
-    # return db.query(models.Dates).options(load_only("id", "month", "day", "fact")).order_by(
-    #     desc("id")
-    # ).all()
+    months = db.query(models.Months).order_by(
+        desc(models.Months.day_checked)).all()
+    return months

@@ -1,6 +1,7 @@
 from crud import (
     create_dates,
-    fetch_all_dates
+    fetch_all_dates,
+    get_popular
 )
 from typing import Collection
 from sqlalchemy.orm import Session
@@ -65,6 +66,10 @@ async def post_dates(dates: DatesIn,  db: Session = Depends(get_db)):
         return dates_data
     raise HTTPException(400, "Something went wrong/ Bad Request")
 
+@app.get("/api/popular")
+async def get_popular_months(db: Session = Depends(get_db)):
+    response = get_popular(db)
+    return response
 
 # @app.put("/api/dates{title }", response_model=DatesResponse)
 # async def put_dates(title: str, desc: str):
