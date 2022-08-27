@@ -1,12 +1,22 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from database import Base
+from sqlalchemy.orm import relationship
 
 
+class Months(Base):
+    __tablename__ = 'months'
+
+    id = Column(Integer, primary_key=True, index=True)
+    month = Column(Integer)
+    day_checked = Column(Integer)
+    dates = relationship("Dates",  back_populates="month")
 
 class Dates(Base):
     __tablename__ = 'dates'
+
     id = Column(Integer, primary_key=True, index=True)
-    month = Column(Integer)
     day = Column(Integer)
     fact = Column(String)
-    day_checked = Column(Integer)
+    month_id = Column(Integer, ForeignKey("months.id"))
+    
+    month = relationship("Months",  back_populates="dates")
