@@ -1,26 +1,33 @@
+from email.header import Header
+from typing import Collection
+from sqlalchemy.orm import Session
+from fastapi import FastAPI, HTTPException, responses, Depends, Header
+from fastapi.middleware.cors import CORSMiddleware
+
+from schemas import Dates, DatesIn, DatesResponse
+from functools import lru_cache
+from models import Dates as ModelDates
+
+import aiohttp
 from crud import (
     create_dates,
     fetch_all_dates,
-    get_popular
+    get_popular,
+    delete_dates
 )
-from typing import Collection
-from sqlalchemy.orm import Session
-from fastapi import FastAPI, HTTPException, responses, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from schemas import Dates, DatesIn, DatesResponse
-from models import Dates as ModelDates
-import aiohttp
-import os
-import crud
-import models
-import schemas
 from database import SessionLocal, engine
-from dotenv import load_dotenv
+from typing import Union
+import os
+import models
+import config
 
 models.Base.metadata.create_all(bind=engine)
 
 
-load_dotenv('.env')
+@lru_cache()
+def get_settings():
+    return config.Settings()
+
 
 # App Object
 app = FastAPI()
@@ -60,28 +67,27 @@ async def post_dates(dates: DatesIn,  db: Session = Depends(get_db)):
     async with aiohttp.ClientSession() as session:
         async with session.get("http://numbersapi.com/"+str(dates.month)+"/"+str(dates.day)+"/date") as resp:
             description = await resp.text()
-    dates_data = DatesResponse(day=dates.day, month=dates.month, fact= description)
+    dates_data = DatesResponse(
+        day=dates.day, month=dates.month, fact=description)
     data = create_dates(db=db, dates_data=dates_data)
     if data:
         return dates_data
     raise HTTPException(400, "Something went wrong/ Bad Request")
+
 
 @app.get("/api/popular")
 async def get_popular_months(db: Session = Depends(get_db)):
     response = get_popular(db)
     return response
 
-# @app.put("/api/dates{title }", response_model=DatesResponse)
-# async def put_dates(title: str, desc: str):
-    # response = await update_todo(title,desc)
-    # if response:
-    #     return response
-    # raise HTTPException(404, f"There is no TODO item with this title {title}")
 
-
-# @app.delete("/api/dates/{title}")
-# async def delete_dates(title):
-    # response = await remove_todo(title)
-    # if response:
-    #     return "successfully deleted todo Item!"
-    # raise HTTPException(404, f"There is no TODO item with this title {title}")
+@app.delete("/api/dates/{id}", response_model=str)
+async def delete_dates_by_id(id: int, db: Session = Depends(get_db),
+                       X_API_KEY: Union[str, None] = Header(default=None), 
+                       settings: config.Settings = Depends(get_settings)):
+    if X_API_KEY == settings.secret_api_key:
+        response = delete_dates(db, id)
+        if response:
+            return "successfully deleted dates!"
+        raise HTTPException(404, f"There is no dates with this id {id}")
+    raise HTTPException(401, f"Unauthorized Access")

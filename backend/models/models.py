@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, deferred
 class Months(Base):
     __tablename__ = 'months'
 
-    id = deferred(Column(Integer, primary_key=True, index=True))
+    id = Column(Integer, primary_key=True, index=True)
     month = Column(Integer)
     day_checked = Column(Integer)
     dates = relationship("Dates",  back_populates="month")
