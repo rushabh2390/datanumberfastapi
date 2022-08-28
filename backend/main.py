@@ -1,14 +1,12 @@
 from email.header import Header
+from telnetlib import STATUS
 from typing import Collection
 from sqlalchemy.orm import Session
-from fastapi import FastAPI, HTTPException, responses, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, status
 from fastapi.middleware.cors import CORSMiddleware
-
-from schemas import Dates, DatesIn, DatesResponse
+from schemas import DatesIn, DatesResponse, Months
 from functools import lru_cache
-from models import Dates as ModelDates
 
-import aiohttp
 from crud import (
     create_dates,
     fetch_all_dates,
@@ -17,7 +15,6 @@ from crud import (
 )
 from database import SessionLocal, engine
 from typing import Union
-import os
 import models
 import config
 
@@ -40,7 +37,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# app.add_middleware(DBSessionMiddleware, db_url=os.environ['DATABASE_URL'])
 
 
 def get_db():
@@ -56,38 +52,34 @@ def get_db():
 #     return {"message": "hello world"}
 
 
-@app.get("/api/dates")
+@app.get("/api/dates", response_model=list(), status_code=200)
 async def get_dates(db: Session = Depends(get_db)):
-    response = fetch_all_dates(db)
+    response = await fetch_all_dates(db)
     return response
 
 
-@app.post("/api/dates", response_model=DatesResponse)
+@app.post("/api/dates", response_model=DatesResponse, status_code=201)
 async def post_dates(dates: DatesIn,  db: Session = Depends(get_db)):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("http://numbersapi.com/"+str(dates.month)+"/"+str(dates.day)+"/date") as resp:
-            description = await resp.text()
-    dates_data = DatesResponse(
-        day=dates.day, month=dates.month, fact=description)
-    data = create_dates(db=db, dates_data=dates_data)
+
+    data = await create_dates(db=db, dates_data=dates)
     if data:
-        return dates_data
+        return data
     raise HTTPException(400, "Something went wrong/ Bad Request")
 
 
-@app.get("/api/popular")
+@app.get("/api/popular", response_model=list(), status_code=200)
 async def get_popular_months(db: Session = Depends(get_db)):
-    response = get_popular(db)
+    response = await get_popular(db)
     return response
 
 
-@app.delete("/api/dates/{id}", response_model=str)
+@app.delete("/api/dates/{id}", response_model=str, status_code=200)
 async def delete_dates_by_id(id: int, db: Session = Depends(get_db),
-                       X_API_KEY: Union[str, None] = Header(default=None), 
-                       settings: config.Settings = Depends(get_settings)):
+                             X_API_KEY: Union[str, None] = Header(default=None),
+                             settings: config.Settings = Depends(get_settings)):
     if X_API_KEY == settings.secret_api_key:
-        response = delete_dates(db, id)
+        response = await delete_dates(db, id)
         if response:
             return "successfully deleted dates!"
-        raise HTTPException(404, f"There is no dates with this id {id}")
+        raise HTTPException(404, f"No data Found {id}")
     raise HTTPException(401, f"Unauthorized Access")

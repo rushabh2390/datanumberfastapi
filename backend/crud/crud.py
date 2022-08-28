@@ -1,17 +1,17 @@
 from sqlalchemy.orm import Session, joinedload
-
+import services
 import models
 import schemas
 from sqlalchemy.orm import load_only
 from sqlalchemy import desc
 
 
-def delete_or_update_months(db: Session, month_id):
-    """_summary_
+async def delete_or_update_months(db: Session, month_id):
+    """delete day_checked and upon 0 day_checker delete month
 
     Args:
-        db (Session): _description_
-        month_id (_type_): _description_
+        db (Session): database instance
+        month_id (_type_): id from months table
     """
     month_record = db.query(models.Months).filter(
         models.Months.id == month_id).first()
@@ -28,11 +28,11 @@ def delete_or_update_months(db: Session, month_id):
         return month_record
 
 
-def create_or_update_months(db: Session, month: int):
-    """_summary_
+async def create_or_update_months(db: Session, month: int):
+    """create or increment day_checked for month
 
     Args:
-        db (Session): create or increment day_checked for month
+        db (Session): database instance
     """
     month_record = db.query(models.Months).filter(
         models.Months.month == month).first()
@@ -52,66 +52,68 @@ def create_or_update_months(db: Session, month: int):
     return month_record
 
 
-def fetch_all_dates(db: Session):
-    """_summary_
+async def fetch_all_dates(db: Session):
+    """fetach all dates records from dates qlong with their month record.
 
     Args:
-        db (Session): _description_
+        db (Session): database instance
 
     Returns:
-        _type_: _description_
+        _type_: return all date data along with their months
     """
     dates = db.query(models.Dates).options(
         (joinedload(models.Dates.month).load_only("month")), load_only("id", "day", "fact")).all()
     return dates
 
 
-def create_dates(db: Session, dates_data: schemas.DatesResponse):
-    """_summary_
+async def create_dates(db: Session, dates_data: schemas.DatesIn):
+    """create dates record  as well create month record(if not exists)
 
     Args:
-        db (Session): _description_
-        dates_record (schemas.DatesResponse): _description_
+        db (Session): database instance
+        dates_record (schemas.DatesIn): date input in DatesIn schema
 
     Returns:
-        _type_: _description_
+        _type_: return DatesResponse schema
     """
-
-    month_record = create_or_update_months(db, dates_data.month)
+    description = await services.get_fact_from_number_Api_by_Month_n_date(month=dates_data.month, day=dates_data.day)
+    month_record = await create_or_update_months(db, dates_data.month)
     dates_record = models.Dates(month_id=month_record.id,
-                                day=dates_data.day, fact=dates_data.fact)
+                                day=dates_data.day, fact=description)
     db.add(dates_record)
     db.commit()
     db.refresh(dates_record)
-    return dates_record
+    dates_record_response = schemas.DatesResponse(
+        day=dates_data.day, month=dates_data.month, fact=description)
+    return dates_record_response
 
 
-def get_popular(db: Session):
-    """_summary_
+async def get_popular(db: Session):
+    """return month records order by day_checked in descending order.
 
     Args:
-        db (Session): _description_
+        db (Session): database instance
 
     Returns:
-        _type_: _description_
+        _type_: return month records
     """
     months = db.query(models.Months).order_by(
         desc(models.Months.day_checked)).all()
     return months
 
 
-def delete_dates(db: Session, id: int):
-    """_summary_
+async def delete_dates(db: Session, id: int):
+    """delete the date record  as well update month records
 
     Args:
-        db (Session): _description_
+        db (Session): database instance
 
     Returns:
-        _type_: _description_
+        _type_: Return deleted date record
     """
     dates_record = db.query(models.Dates).filter(models.Dates.id == id).first()
     if dates_record:
-        month_record = delete_or_update_months(
+        month_record = await delete_or_update_months(
             db, dates_record.month_id)
         db.delete(dates_record)
         db.commit()
