@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ValidationError, validator
-from typing import List, Union, Optional
 
 
 class MonthsIn(BaseModel):
@@ -68,9 +67,6 @@ class Dates(DatesResponse):
         _type_: Dates Data have month date id and fact
     """
     id: int
-
-    class Config:
-        orm_mode = True
 
     class Config:
         orm_mode = True
