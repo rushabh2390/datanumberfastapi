@@ -1,6 +1,6 @@
 # Datanumber FASTAPI application have backend in FASTAPI and store in POSTGRESQL)
 ---
-## python(version >3.7) postgreSQL
+## python(version >3.7) postgreSQL(version > 12)
 ---
 ### Run locally
 1. Clone this repo.
