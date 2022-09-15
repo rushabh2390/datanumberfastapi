@@ -1,6 +1,6 @@
 # Datanumber FASTAPI application have backend in FASTAPI and store in POSTGRESQL)
 ---
-## Required  npm(version: 8.1.2) and python(version >3.7) mongoDB(version 4.4.0)
+## python(version >3.7) postgreSQL
 ---
 ### Run locally
 1. Clone this repo.
